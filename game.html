@@ -1,0 +1,218 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Matching Game</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body.black-blue-theme {
+            background-color: #121212;
+            color: #00aaff;
+        }
+        
+        body.white-theme {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        
+        .game-container {
+            display: grid;
+            gap: 10px;
+            justify-content: center;
+            margin: auto;
+            margin-bottom: 20px;
+        }
+        .card {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            cursor: pointer;
+            perspective: 1000px;
+        }
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+        }
+        .card-front {
+            transform: rotateY(180deg);
+        }
+        .card-back {
+            background: url('images/mgb.jpg') no-repeat center/cover;
+        }
+        .stats {
+            margin-top: 20px;
+            text-align: center;
+        }
+        ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #050505;
+    }
+    
+    li {
+      float: left;
+    }
+    
+    li a {
+      display: block;
+      color: rgb(255, 255, 255);
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+    }
+    
+    li a:hover:not(.active) {
+      background-color: #1709b3;
+    }
+    
+    .active {
+      background-color: #0415aab5;
+    }
+    </style>
+</head>
+<body class="black-blue-theme">
+
+          <!-- Navbar -->
+          <ul>
+            <li><a href="Index.html">Home</a></li>
+            <li><a href="leaderboard.html">Leaderboard</a></li>
+            <li><a href="game.html">Game</a></li>
+            <li><a href="about.html">About</a></li>
+            <li style="float:right"><a class="active" href="register.html">Sign Up</a></li>
+            <li style="float:right"><a class="active" href="login.html">Log In</a></li>
+          </ul>
+      </div>
+            <!-- Navbar End -->
+    <div class="container mt-4 text-center">
+        <h1>Memory Matching Game</h1>
+        <div class="settings mb-3">
+            <label for="gridSize">Grid Size:</label>
+            <select id="gridSize" class="form-select w-auto d-inline-block">
+                <option value="4">4x4</option>
+                <option value="5" selected>5x5</option>
+                <option value="8">8x8</option>
+            </select>
+            <button id="startGame" class="btn btn-primary">Start Game</button>
+        </div>
+        <div id="gameBoard" class="game-container"></div>
+        <div class="stats">
+            <p>Moves: <span id="moveCount">0</span></p>
+            <p>Time: <span id="timer">0</span> sec</p>
+        </div>
+    </div>
+    <script>
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let moves = 0;
+        let timer = 0;
+        let interval;
+
+        $(document).ready(function() {
+            $('#startGame').click(function() {
+                let gridSize = parseInt($('#gridSize').val());
+                startGame(gridSize);
+            });
+        });
+
+        function startGame(size) {
+            moves = 0;
+            timer = 0;
+            clearInterval(interval);
+            $('#moveCount').text(moves);
+            $('#timer').text(timer);
+            interval = setInterval(() => {
+                timer++;
+                $('#timer').text(timer);
+            }, 1000);
+            generateBoard(size); 
+        }
+
+        function generateBoard(size) {
+            let board = $('#gameBoard');
+            board.empty();
+            board.css({
+                'grid-template-columns': `repeat(${size}, 100px)`,
+                'grid-template-rows': `repeat(${size}, 100px)`
+            });
+
+            let totalCards = size * size;
+            let pairs = Math.floor(totalCards / 2);
+            let cards = [];
+            
+            // Array of image names
+            let images = ['mg2.jpg', 'mg3.jpg', 'mg4.jpg', 'mg5.jpg', 'mg6.webp', 'mg7.jpg', 'mg8.jpg', 'mg9.avif', 'mg10.webp', 'mg11.jpg', 'mg12.webp', 'mg13.webp', 'mg14.webp', 'mg15.webp', 'mg16.jpg', 'mg17.jpg', 'mg18.jpg', 'mg19.jpg', 'mg20.webp', 'mg21.webp', 'mg22.jpg', 'mg23.webp', 'mg24.jpg', 'mg25.webp', 'mg26.jpg', 'mg27.jpg', 'mg28.avif', 'mg29.webp', 'mg30.jpg', 'mg31.jpg', 'mg32.webp'];
+            
+            // Ensure there are enough images for the number of pairs
+            for (let i = 0; i < pairs; i++) {
+                cards.push(images[i % images.length], images[i % images.length]);
+            }
+            
+            cards.sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < totalCards; i++) {
+                let card = $('<div class="card"></div>');
+                let cardInner = $('<div class="card-inner"></div>');
+                let cardFront = $('<div class="card-front"></div>');
+                let cardBack = $('<div class="card-back"></div>');
+                
+                // Set the background image dynamically based on the card's value
+                cardFront.css('background', `url('images/${cards[i]}') no-repeat center/cover`);
+                card.data('value', cards[i]);
+
+                cardInner.append(cardFront, cardBack);
+                card.append(cardInner);
+                card.click(flipCard);
+                board.append(card);
+            }
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            let card = $(this);
+            if (card.hasClass('flipped')) return;
+            
+            card.addClass('flipped');
+            if (!firstCard) {
+                firstCard = card;
+            } else {
+                secondCard = card;
+                lockBoard = true;
+                moves++;
+                $('#moveCount').text(moves);
+                
+                if (firstCard.data('value') === secondCard.data('value')) {
+                    firstCard = null;
+                    secondCard = null;
+                    lockBoard = false;
+                } else {
+                    setTimeout(() => {
+                        firstCard.removeClass('flipped');
+                        secondCard.removeClass('flipped');
+                        firstCard = null;
+                        secondCard = null;
+                        lockBoard = false;
+                    }, 1000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
